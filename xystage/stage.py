@@ -3,9 +3,9 @@ import numpy as np
 import serial
 import time
 
-
 class Stage(object):
     def __init__(self, port = 'COM6'):
+        #Open serial port in following way to make sure DTR isn't asserted, which would reset the arduino
         self.s = serial.Serial()
         self.s.setPort(port)
         self.s.setDTR(False)
@@ -20,4 +20,69 @@ class Stage(object):
             resp += self.s.read()
             if '>' in resp:
                 break
+            time.sleep(0.001)
         return resp
+
+    def parse_reply(self,reply):
+        lines = reply.splitlines()
+        for line in lines:
+            if line.startswith('R'):
+                parts = line.split()
+                if len(parts) != 2:
+                    raise ValueError("Couldn't parse reply: %s" % reply)
+                return int(parts[1])
+
+    def _get_position(self,axis):
+        return self.parse_reply(self.sendget("C9 %d\n" % axis))
+
+    def get_position(self):
+        return self._get_position(0),self._get_position(1)
+
+    def _wait_while_active(self,axis,timeout=10):
+        self.sendget(("C24 %d\n" % axis),timeout=timeout)
+    def wait_while_active(self,timeout=10):
+        self._wait_while_active(0,timeout=timeout)
+        self._wait_while_active(1,timeout=timeout)
+
+    def _go_to_position(self,axis,position):
+        self.sendget("C12 %d %d\n" % (axis,position))
+
+    def go_to_position(self,x,y,block=True):
+        self._go_to_position(0,x)
+        self._go_to_position(1,y)
+        if block:
+            self.wait_while_active()
+
+    def reset_home(self):
+        self.sendget("C19 0\n")
+        self.sendget("C19 1\n")
+
+    def reset(self):
+        self.go_to_position(-3000,-3000)
+        self.reset_home()
+
+    def set_stepping(self,microsteps):
+        if microsteps not in [1,2,4,8,16]:
+            raise ValueError("Invalid number of microsteps, must be 1,2,4,8,16")
+        self.sendget("C34 0 %d\n" % microsteps)
+        self.sendget("C34 1 %d\n" % microsteps)
+
+    def set_speed(self,min,max=None,axis=0):
+        if max is None:
+            max = min
+        self.sendget("C21 %d %d\n" % (axis, max))
+        self.sendget("C22 %d %d\n" % (axis, min))
+        actual_max = self.parse_reply(self.sendget("C7 %d\n" % axis))
+        actual_min = self.parse_reply(self.sendget("C8 %d\n" % axis))
+        return actual_min,actual_max
+
+    def set_acceleration(self,accel,axis=0):
+        self.sendget("C17 %d %d\n" % (axis,accel))
+        self.sendget("C18 %d %d\n" % (axis,accel))
+        actual_accel = self.parse_reply(self.sendget("C1 %d\n" % axis))
+        actual_decel = self.parse_reply(self.sendget("C3 %d\n" % axis))
+        return actual_decel,actual_accel
+
+    def hard_stop(self):
+        self.sendget("C13 0\n")
+        self.sendget("C13 1\n")
