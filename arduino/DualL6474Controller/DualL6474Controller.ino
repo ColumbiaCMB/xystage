@@ -133,7 +133,9 @@ void ParseCommand(char newChar)
       if ((gCommand != 0) && (gCommand <= NB_L6474_UART_COMMAND))
       {
         gTarget = Serial.parseInt();
-        
+        if (gTarget > 1) {
+          gTarget = 0;
+        }
         if (aCommandArgumentNb[gCommand - 1] > 0)
         {
           gArg1 = Serial.parseInt();
@@ -346,7 +348,7 @@ void ExecuteCommand (uint8_t newCommand, uint32_t target, uint32_t newArg1, uint
        data = myL6474.CmdGetParam(target, (L6474_Registers_t)newArg1);
 //       Serial.print("Get param 0x");
        Serial.print("R ");
-       Serial.println(data, HEX);   
+       Serial.println(data, DEC);   
       
        
       break;    
@@ -355,7 +357,7 @@ void ExecuteCommand (uint8_t newCommand, uint32_t target, uint32_t newArg1, uint
        data = myL6474.CmdGetStatus(target);
 //       Serial.print("Get status 0x");
        Serial.print("R ");
-       Serial.println(data, HEX);         
+       Serial.println(data, DEC);         
       break;    
      case 29:
       //C29 CmdNop
@@ -372,7 +374,7 @@ void ExecuteCommand (uint8_t newCommand, uint32_t target, uint32_t newArg1, uint
        data = myL6474.ReadStatusRegister(target);
 //       Serial.print("Read status register 0x");
        Serial.print("R ");
-       Serial.println(data, HEX);           
+       Serial.println(data, DEC);           
       break;    
      case 32:
       //C32 Reset
@@ -387,7 +389,7 @@ void ExecuteCommand (uint8_t newCommand, uint32_t target, uint32_t newArg1, uint
      case 34:
       //C33 SelectStepMode
       L6474_STEP_SEL_t stepMode;
-      Serial.print("Set step mode: ");
+//      Serial.print("Set step mode: ");
       switch (newArg1)
       {
          case 1:
