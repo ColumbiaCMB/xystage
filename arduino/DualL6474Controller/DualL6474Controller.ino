@@ -1,12 +1,12 @@
 /* Based on https://github.com/MotorDriver/L6474/blob/master/L6474SketchFor1MotorShieldDrivenByUart/L6474SketchFor1MotorShieldDrivenByUart.ino */
 
 #include <l6474_target_config.h>
-
+ 
 
 #include <l6474.h>
 #include <SPI.h>
 
-#define NB_L6474_UART_COMMAND (36)
+#define NB_L6474_UART_COMMAND (37)
 
 const uint8_t aCommandArgumentNb[NB_L6474_UART_COMMAND] = {0 ,   //C1 GetAcceleration
                                                            0,    //C2 GetCurrentSpeed
@@ -42,7 +42,8 @@ const uint8_t aCommandArgumentNb[NB_L6474_UART_COMMAND] = {0 ,   //C1 GetAcceler
                                                            0,    //C32 Reset
                                                            0,    //C33 ReleaseReset
                                                            1,    //C34 SelectStepMode
-                                                           1};   //C35 SetDirection
+                                                           1,    //C35 SetDirection
+                                                           0};   //C36 ReadLimits
                                                            
 L6474 myL6474;  
 
@@ -61,6 +62,14 @@ void setup()
   // initialize serial:
   Serial.begin(9600);
   Serial.setTimeout(10000);
+  
+  pinMode(A0,INPUT);
+  pinMode(A1,INPUT);
+  pinMode(A2,INPUT);
+  pinMode(A3,INPUT);
+  pinMode(A4,INPUT_PULLUP);
+  pinMode(A5,INPUT_PULLUP);
+  
 
   /* Start the library to use 2 shields */
   /* The L6474 registers are set with the predefined values */
@@ -428,7 +437,25 @@ void ExecuteCommand (uint8_t newCommand, uint32_t target, uint32_t newArg1, uint
         myL6474.SetDirection(target, BACKWARD);  
  //       Serial.println("Set Backward direction");
       }      
-      break;               
+      break;  
+     case 36:
+      // C36 ReadLimits
+      data = 0;
+      if(digitalRead(A0)) {
+       data += 1;
+      }
+      if(digitalRead(A1)) {
+       data += 2;
+      }
+      if(digitalRead(A2)) {
+       data += 4;
+      }
+      if(digitalRead(A3)) {
+       data += 8;
+      }      
+      Serial.print("R ");
+      Serial.println(data, DEC);           
+      break;
   }
 }
 
