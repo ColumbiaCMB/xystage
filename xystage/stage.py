@@ -3,6 +3,10 @@ import numpy as np
 import serial
 import time
 
+class StatusBits(object):
+    def __repr__(self):
+        return "\n".join([('%s:%s' % (k,v)) for k,v in self.__dict__.items()])
+
 class Stage(object):
     def __init__(self, port = 'COM6'):
         #Open serial port in following way to make sure DTR isn't asserted, which would reset the arduino
@@ -38,6 +42,24 @@ class Stage(object):
     def get_position(self):
         return self._get_position(0),self._get_position(1)
 
+    def get_status(self):
+        st0 = self.parse_reply(self.sendget("C31 0\n"))
+        st1 = self.parse_reply(self.sendget("C31 1\n"))
+        return self.decode_status_bits(st0),self.decode_status_bits(st1)
+
+    def decode_status_bits(self,status_reg):
+        bits = StatusBits()
+        bits.over_current = not (status_reg & 0x1000)
+        bits.thermal_shutdown = not (status_reg & 0x0800)
+        bits.thermal_warning = not (status_reg & 0x0400)
+        bits.under_voltage = not (status_reg & 0x0200)
+        bits.wrong_command = bool(status_reg & 0x0100)
+        bits.cant_perform_command = bool(status_reg & 0x0080)
+        bits.dir = bool(status_reg & 0x0010)
+        bits.hiz = bool(status_reg & 0x0001)
+        return bits
+
+
     def _wait_while_active(self,axis,timeout=10):
         self.sendget(("C24 %d\n" % axis),timeout=timeout)
     def wait_while_active(self,timeout=10):
@@ -60,6 +82,9 @@ class Stage(object):
     def reset(self):
         self.go_to_position(-3000,-3000)
         self.reset_home()
+
+    def reset_stages(self):
+        self.sendget("C15 0\n")
 
     def set_stepping(self,microsteps):
         if microsteps not in [1,2,4,8,16]:
