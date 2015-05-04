@@ -47,6 +47,9 @@ class Stage(object):
         st1 = self.parse_reply(self.sendget("C31 1\n"))
         return self.decode_status_bits(st0),self.decode_status_bits(st1)
 
+    def get_limits(self):
+        return self.parse_reply(self.sendget("C36 0\n"))
+
     def decode_status_bits(self,status_reg):
         bits = StatusBits()
         bits.over_current = not (status_reg & 0x1000)

@@ -3,8 +3,10 @@ import stage
 s = stage.Stage()
 s.set_stepping(2)
 print s.set_acceleration(100)
-s.set_speed(50,200)
-s.set_speed(50,200)
+s.set_speed(200,2000,axis=0)
+s.set_speed(200,2000,axis=0)
+s.set_speed(200,2000,axis=1)
+s.set_speed(200,2000,axis=1)
 while True:
     for x in range(0,351,10):
         s.go_to_position(x,x)
