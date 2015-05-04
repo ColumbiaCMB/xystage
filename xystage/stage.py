@@ -2,13 +2,18 @@ import numpy as np
 
 import serial
 import time
+import platform
+if platform.system() == 'Windows':
+    default_port = 'COM6'
+else:
+    default_port = '/dev/ttyACM0'
 
 class StatusBits(object):
     def __repr__(self):
         return "\n".join([('%s:%s' % (k,v)) for k,v in self.__dict__.items()])
 
 class Stage(object):
-    def __init__(self, port = 'COM6'):
+    def __init__(self, port = default_port):
         #Open serial port in following way to make sure DTR isn't asserted, which would reset the arduino
         self.s = serial.Serial()
         self.s.setPort(port)
