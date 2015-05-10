@@ -17,7 +17,10 @@ class Stage(object):
         #Open serial port in following way to make sure DTR isn't asserted, which would reset the arduino
         self.s = serial.Serial()
         self.s.setPort(port)
-        self.s.setDTR(False)
+        try:
+            self.s.setDTR(False)
+        except Exception:
+            pass
         self.s.timeout = 0
         self.s.open()
     def sendget(self,cmdstr,timeout=2):
@@ -70,7 +73,7 @@ class Stage(object):
 
     def _wait_while_active(self,axis,timeout=10):
         self.sendget(("C24 %d\n" % axis),timeout=timeout)
-    def wait_while_active(self,timeout=10):
+    def wait_while_active(self,timeout=30):
         self._wait_while_active(0,timeout=timeout)
         self._wait_while_active(1,timeout=timeout)
 
@@ -82,6 +85,38 @@ class Stage(object):
         self._go_to_position(1,y)
         if block:
             self.wait_while_active()
+
+    def initialize(self,acceleration=200,min_speed=200,max_speed=400,stepping=4):
+        for axis in [0,1]:
+            self.set_acceleration(acceleration,axis=axis)
+            self.set_speed(min_speed,max_speed,axis=axis)
+            self.set_speed(min_speed,max_speed,axis=axis)
+            self.set_stepping(stepping)
+
+    def find_home(self):
+        self.reset_home()
+        self._find_home(stepsize=400)
+        self.go_to_position(200,200)
+        self.reset_home()
+        self._find_home(stepsize=40)
+        self.go_to_position(100,100)
+        self.reset_home()
+        self._find_home(stepsize=4)
+    def _find_home(self,stepsize=40):
+        xdone = not(self.get_limits() & 0x02)
+        ydone = not(self.get_limits() & 0x08)
+        x = 0
+        y = 0
+        self.go_to_position(x,y)
+        while not (xdone and ydone):
+            if not xdone:
+                x -= stepsize
+            if not ydone:
+                y -= stepsize
+            self.go_to_position(x,y)
+            xdone = not(self.get_limits() & 0x02)
+            ydone = not(self.get_limits() & 0x08)
+        self.reset_home()
 
     def reset_home(self):
         self.sendget("C19 0\n")
