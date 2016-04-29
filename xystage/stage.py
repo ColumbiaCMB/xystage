@@ -8,6 +8,11 @@ if platform.system() == 'Windows':
 else:
     default_port = '/dev/ttyACM0'
 
+hwp_speed = 800,8000
+hwp_acceleration = 2000
+hwp_stepping = 16
+
+
 class StatusBits(object):
     def __repr__(self):
         return "\n".join([('%s:%s' % (k,v)) for k,v in self.__dict__.items()])
@@ -92,6 +97,14 @@ class Stage(object):
             self.set_speed(min_speed,max_speed,axis=axis)
             self.set_speed(min_speed,max_speed,axis=axis)
             self.set_stepping(stepping)
+
+    def initialize_hwp(self,acceleration=2000,min_speed=800,max_speed=8000,stepping=16):
+        axis = 0
+        self.set_acceleration(acceleration,axis=axis)
+        self.set_speed(min_speed,max_speed,axis=axis)
+        self.set_speed(min_speed,max_speed,axis=axis)
+        self.set_stepping(stepping)
+
 
     def find_home(self):
         self.reset_home()
