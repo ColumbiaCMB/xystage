@@ -118,7 +118,7 @@ class MapFileViewer(Viewer2d):
     def __init__(self,filename):
         self.filename = filename
         x,y,z = self.get_data()
-        self.freq_index = 5
+        self.freq_index = 3
         super(MapFileViewer,self).__init__(z[:,:,self.freq_index],x,y)
         self.last_mtime = os.path.getmtime(self.filename)
         self.timer = self.fig.canvas.new_timer(interval=2000)

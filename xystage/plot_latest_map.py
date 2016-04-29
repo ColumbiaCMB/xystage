@@ -4,7 +4,7 @@ import netCDF4
 import glob
 from matplotlib import pyplot as plt
 
-files = glob.glob('/home/data/beams/*.nc')
+files = glob.glob('/data/readout/beams/*.nc')
 files.sort()
 
 mapview.MapFileViewer(files[-1])

@@ -6,7 +6,7 @@ import platform
 if platform.system() == 'Windows':
     default_port = 'COM6'
 else:
-    default_port = '/dev/ttyACM0'
+    default_port = '/dev/ttyACM1'
 
 hwp_speed = 800,8000
 hwp_acceleration = 2000

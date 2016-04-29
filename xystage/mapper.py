@@ -13,12 +13,19 @@ class Mapper():
         self.stage = stage.Stage()
         self.stage.initialize()
         # self.stage.find_home()
-        self.lockin = lockinController(serial_port='/dev/ttyUSB3')
+        self.lockin = lockinController(serial_port='/dev/ttyUSB2')
+        print self.lockin.get_idn()
+        self.lockin.send('OFLT 8') # 100 ms
         self.hittite = None
+        self._have_found_home = False
 
     def do_simple_map(self, xsteps=np.arange(0, 10000, 1000), ysteps=np.arange(0, 10000, 1000),
                       settle_time=0.1, mmw_source_frequencies=-1, description="",suffix=""):
-        # self.stage.find_home()
+        if not self._have_found_home:
+            print "homing..."
+            self.stage.find_home()
+            self.stage.find_home()
+            self._have_found_home = True
         if np.isscalar(mmw_source_frequencies):
             mmw_source_frequencies = np.array([mmw_source_frequencies])
         # if CW mode is used, frequency is > 0
@@ -32,6 +39,9 @@ class Mapper():
         mapfile.group.description = description
         #mapfile.group.microstepping =
         self.mapfile = mapfile
+        total_measurements = len(xsteps)*len(ysteps)
+        measured_so_far = 0
+        start_time = time.time()
 
         for y in range(len(ysteps)):
             if y % 2:
@@ -46,13 +56,20 @@ class Mapper():
                     if freq > 0:
                         self.hittite.set_freq(freq/12.0)
                     time.sleep(settle_time)
-                    z, _, r, theta = self.lockin.get_data()
-                    mapfile.z[x,y,freq_index] = z
+                    #z, _, r, theta = self.lockin.get_data()
+                    r,sensitivity = self.lockin.auto_range_measure(debug=True)
+                    mapfile.z[x,y,freq_index] = r
+                    mapfile.sensitivity[x,y,freq_index] = sensitivity
                     mapfile.nc.sync()
-                    print x, y, freq, z
+                    print x, y, freq, r
+                measured_so_far +=1
+                time_so_far = time.time()-start_time
+                time_per_point = time_so_far/measured_so_far
+                time_remaining = time_per_point*(total_measurements-measured_so_far)
+                print "%.1f minutes remaining, finish at %s" % (time_remaining/60.,time.ctime(time.time()+time_remaining))
 
 
-def create_new_netcdf_file(base_dir='/home/data/beams', suffix=''):
+def create_new_netcdf_file(base_dir='/data/readout/beams', suffix=''):
     ase_dir = os.path.expanduser(base_dir)
     if not os.path.exists(base_dir):
         try:
@@ -89,7 +106,7 @@ class MapDataFile():
         self.y = group.createVariable('y', np.float, dimensions=('y',))
         self.frequency = group.createVariable('frequency', np.float, dimensions=('frequency',))
         self.z = group.createVariable('z', np.float, dimensions=('x', 'y','frequency'))
-
+        self.sensitivity = group.createVariable('sensitivity', np.float, dimensions=('x', 'y','frequency'))
         self.x[:] = x
         self.y[:] = y
         self.frequency[:] = frequency
