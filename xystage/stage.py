@@ -86,10 +86,20 @@ class Stage(object):
         self.sendget("C12 %d %d\n" % (axis,position))
 
     def go_to_position(self,x,y,block=True):
+        if x > 7000:
+            raise ValueError("Cannot safely go to x locations higher than 7000")
+        if y > 4500:
+            raise ValueError("Cannot safely go to y locations higher than 4500")
         self._go_to_position(0,x)
         self._go_to_position(1,y)
         if block:
             self.wait_while_active()
+
+    def hwp_go_to_position(self,position,stop=True):
+        self._go_to_position(0,position)
+        if stop:
+            self.wait_while_active()
+            self.hard_stop()
 
     def initialize(self,acceleration=200,min_speed=200,max_speed=400,stepping=4):
         for axis in [0,1]:
