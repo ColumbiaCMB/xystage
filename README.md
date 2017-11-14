@@ -1,2 +1,3 @@
 # xystage
-code to control the xy stage antenna pattern mapper
+
+Code to control the xy stage antenna pattern mapper and other Arduino hardware.
